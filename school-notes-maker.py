@@ -13,6 +13,10 @@ Description: This program generates a LaTeX template for School course notes
 # TODO: Ask for lecture times (during the day)
 # TODO: Account for lab dates and times
 # TODO: Account for tutorial dates and times
+# TODO: Account for different locations. At the moment, program only asks for
+# one location. Tutorials and lectures could be in different places.
+# Additionally, not all lectures always have the same room. Example: MW in Room
+# A, F in Room B.
 
 import os
 import os.path
@@ -93,6 +97,8 @@ def rep_arr_val(list, search_str, str):
     return list # Return the new list with changed values
 
 def main(argv):
+    # --------------- VARIABLES ------------------
+    notebookNum = "10" # Current notebook number for the LaTeX \todo commands
     author = "Hussein Esmail"
     filename = ""
     path_template_dir = os.path.expanduser("~/git/templates/")
@@ -108,6 +114,7 @@ def main(argv):
     prof = ""
     semester = ""
     courseCredits = ""
+    # --------------- VARIABLES ------------------
 
     # Process user arguments
     # https://www.tutorialspoint.com/python/python_command_line_arguments.htm
@@ -154,8 +161,8 @@ def main(argv):
         elif opt in ("-t", "--title"): # Course title
             courseTitle = arg
 
+    print()
     # Ask user anything that is unanswered and required
-
     if courseCode == "": # If course code was not given in initial run line
         courseCode = require_answer("Course code (with spaces): ")
 
@@ -163,13 +170,13 @@ def main(argv):
     print(f"{str_prefix_info} About to ask which weekdays for Lectures, Tutorials, Labs" )
     # TODO: change the hardcoded "Lecture, Tutorials, Labs" for the line above to refer to weekdays_order array later
 
-    for weekday_type, weekday_type_num in enumerate(weekdays): # Weekday values, all initially ""
+    for weekday_type_num, weekday_type in enumerate(weekdays): # Weekday values, all initially ""
         weekday_type_str = weekdays_order[weekday_type_num] # "Lecture", "Tutorials", or "Labs". Used for asking the user to input each type
         if weekday_type == "": # If weekdays the course occurs not given
             # Do not use require_answer() because it has to check weekday regex
             while True:
-                weekdays[weekday_type_num] = input(str_prefix_ques + " Input weekdays this course happens (MTWRF): ").strip().replace(" ", "")
-                if bool(re.match("^[MTWRFmtwrf]+$", weekdays)): # Weekday regex
+                weekdays[weekday_type_num] = input(f"{str_prefix_ques} Input weekdays {weekdays_order[weekday_type_num]} happen (MTWRF): ").strip().replace(" ", "")
+                if bool(re.match("^[MTWRFmtwrf]+$", "".join(weekdays))): # Weekday regex
                     break
                 else:
                     print(f"{str_prefix_err} Please only enter only MTWRF characters!")
@@ -217,8 +224,10 @@ def main(argv):
     partOfYear = semester[4:] # W or F of SU (rest of string after 4 characters)
     if partOfYear == "W":
         month = 1 # January
+        d = datetime.date(year, month, 7)
     elif partOfYear == "F":
         month = 9 # September
+        d = datetime.date(year, month, 7)
     elif partOfYear == "SU":
         d = datetime.date(year, 5, 7) # 2nd Monday of May
         next_monday = next_weekday(d, 0)
@@ -231,6 +240,10 @@ def main(argv):
         # Exams week in 2022: June 21-24
     elif partOfYear == "S2":
         month = 6 # S2 semester starts in June (2022: June 27)
+        d = datetime.date(year, month, 27)
+    else:
+        # In case of errors
+        d = datetime.date(year, 1, 1) # Jan 1 (user changes)
     # If the current month is after January
     # if date.now().month > 1:
     #     d = datetime.date(year, 1, 7)
@@ -267,6 +280,22 @@ def main(argv):
     # Read template file contents
     lines = open(path_template_dir + path_template_file, "r").readlines()
 
+    # Format the weekdays array:
+    weekdays_str = ""
+    weekdays_temp = "".join(weekdays)
+    if "M" in weekdays_temp:
+        weekdays_str += "M"
+    if "T" in weekdays_temp:
+        weekdays_str += "T"
+    if "W" in weekdays_temp:
+        weekdays_str += "W"
+    if "R" in weekdays_temp:
+        weekdays_str += "R"
+    if "F" in weekdays_temp:
+        weekdays_str += "F"
+
+
+
     # Change values in LaTeX template preamble
     ncmd = "\\def\\" # ncmd = "New Command" prefix string
     lines = rep_arr_val(lines, "[FILENAME]", filename) # File name
@@ -281,7 +310,7 @@ def main(argv):
     lines = rep_arr_val(lines, "[COURSE-TITLE]", courseTitle)
     lines = rep_arr_val(lines, "[COURSE-PROF]", prof) # Prof's full name
     lines = rep_arr_val(lines, "[COURSE-SEMESTER]", semester) # Prof's full name
-    lines = rep_arr_val(lines, "[COURSE-SCHEDULE]", weekdays)
+    lines = rep_arr_val(lines, "[COURSE-SCHEDULE]", weekdays_str)
     lines = rep_arr_val(lines, "[COURSE-SECTION]", courseSection)
     lines = rep_arr_val(lines, "[COURSE-LOCATION]", courseLocation)
     lines = rep_arr_val(lines, "[PROF]", prof.split()[0]) # Prof by informal name within notes
@@ -314,9 +343,8 @@ def main(argv):
                 weekday_short = "Fri"
             tDateFormatted = d.strftime("%Y %m %d")
             lines_append.append("\\subsection{Lecture " + str(lectureCount) + ": " + tDateFormatted + " (" + weekday_short + ")}")
-            lines_append.append("\\begin{itemize*}")
-            lines_append.append("    \\item ")
-            lines_append.append("\\end{itemize*}\n")
+            lines_append.append(f"% N{notebookNum}-P___"}
+            lines_append.append("\\todo[inline, \\bg=pink]{Type L" + str(lectureCount) + " N" + str(notebookNum) + "-P---}\n")
             lectureCount += 1 # Increase lecture counter for the subsections
 
     # Merge arrays + write to file

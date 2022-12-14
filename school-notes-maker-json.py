@@ -399,7 +399,7 @@ def main(argv):
         while True:
             courseCredits = input(f"{prefix_ques} Course credit amount: ")
             try:
-                courseCredits = int(courseCredits.strip()
+                courseCredits = int(courseCredits.strip())
                 if yes_or_no(f"Is this correct - {courseCredits} credits? "):
                     break
             except ValueError:
@@ -475,6 +475,22 @@ def main(argv):
                     break
             d = date_correct
 
+    # Ask the user when reading week is
+    # TODO
+    r_week_start = None
+    r_week_end   = None
+    # Generate the list of possible options:
+    mondays = [next_monday.strftime("%Y %m %d")]
+    for week in range(0, 11):
+        # 11: The number of weeks (12) minus 1 (11) because `mondays` already
+        #       has the first entry before the loop starts
+        mondays.append(next_weekday(mondays[-1], 0).strftime("%Y %m %d"))
+    while r_week_start == None:
+        # Continue until it gets a valid answer
+        print("Which week does")
+
+
+
 
     # Warn user if they have multiple types of something, and ask to choose
     for num, meeting_type in enumerate(types_days[1:]):
@@ -523,6 +539,7 @@ def main(argv):
         for day in range(0, 5):
             # For every day in the week (Monday to Friday)
             d = next_weekday(d, day) # Update the weekday
+            # TODO: while day is not in reading week block
             weekday_short = d.strftime('%A')[0:3] # First 3 letters of weekday
             weekday_let = weekday_short[0]
             if day == 3: # 3 = Thursday = R, not T
